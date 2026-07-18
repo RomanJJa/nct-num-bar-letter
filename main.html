@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="de" prefix="og: http://ogp.me/ns#">
+<head>
+	<title>Numbers, Letters, Bars</title>
+	<meta charset="UTF-8">
+	
+	<!-- <base href="http://127.0.0.1/"/> -->
+	<base href="https://romans.cc"/>
+
+	<script src="lib/pslides/v0.3.1/main.js"></script>
+	<link type="text/css" rel="stylesheet" href="lib/pslides/v0.3.1/style.css"/>
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+
+<p-data src="u/rj/num-bar-letter/app/new_sets_by_unit_and_total_dist.csv" id="stimuli" 
+        format="csv" order="pseudoshuffle(3)" groups="numA_is_num1"></p-data>
+<p-data src="u/rj/num-bar-letter/app/practice.csv" id="practice" 
+        format="csv" order="pseudoshuffle(2)" groups="numA_is_num1"></p-data>
+
+<style>
+
+body {
+	font-size: 15pt;
+}
+
+code {
+	font-size: 130%;
+	line-height:90%;
+}
+
+div.verticalframe {
+	margin: auto auto;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+div.horizontalframe {
+	margin: auto auto;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+}
+
+p-slide.explanation {
+	margin-left: 20%;
+	margin-right: 20%;
+	margin-top: 4em;
+	width: 60%;
+}
+
+p.feedback {
+	font-size: 2.5cm;
+}
+
+div.twodigitnumber,
+div.twoletternumber {
+	display:flex;
+	text-align:center;
+	margin: 0.2cm 1.2cm; /* top-bottom left-right */
+}
+
+div.twobarnumber {
+	display:flex;
+	width:2cm;
+	height:5cm;
+	text-align:center;
+	margin: 0.2cm 1.5cm; 
+}
+
+div.numberbuffer {
+	min-width:3cm;
+	width:3cm;
+	height:5cm;
+	margin:0 0; 
+}
+
+div.decadedigit, div.unitdigit {
+	flex:50%;
+	height:5cm;
+	background-color: black;
+	padding: 0mm;
+	bottom: 0px;
+	margin: 1mm;
+	border: none; /* 1mm solid white; */
+	border-radius: 0mm;
+}
+
+p-center.fixcross {
+	font-size: 2cm;
+}
+
+div.twodigitnumber div.decadedigit, 
+div.twodigitnumber div.unitdigit,
+div.twoletternumber div.decadedigit, 
+div.twoletternumber div.unitdigit {
+	font-size: 2cm;
+	margin-top: 0.6cm;
+	margin-bottom: 0.6cm;
+	height: auto;
+	font-family: Consolas, "Courier New", monospace;
+	background-color:white;
+}
+
+div.decadedigit>div.magnitude, 
+div.unitdigit>div.magnitude {
+	/* modulate height! */
+	background-color:white; 
+	margin: -1mm;
+	padding: 0mm;
+	bottom: 0;
+}
+
+div.letter, div.digit {
+	line-height:100%;
+}
+
+div.twodigitnumber div.magnitude,
+div.twoletternumber div.magnitude {
+	display: none;
+}
+div.twobarnumber div.digit,
+div.twoletternumber div.digit {
+	display: none;
+}
+div.twodigitnumber div.letter,
+div.twobarnumber div.letter {
+	display: none;
+}
+
+.example_display {
+	width:100%;
+	display:flex;
+	justify-content:center;
+}
+
+.error-feedback,
+.correct-feedback,
+.incorrect-feedback {
+	font-weight: bold;
+	font-size: 1.2cm;
+}
+
+.verticalframe .twobarnumber {
+	margin-top: -2cm;
+	padding-top: 2cm;
+}
+
+.error-feedback {color: orange;}
+.correct-feedback {color: blue;}
+.incorrect-feedback {color: red;}
+
+
+
+p-dragdrop.source_bucket {
+	min-height: 3em;
+	width: 13em;
+}
+p-dragdrop.source_bucket>* {
+	display: none;
+}
+p-dragdrop.source_bucket>*:first-child {
+	display: inline-block;
+}
+p-dragdrop.target_bucket {
+	height: 18em;
+	width: 13em;
+}
+
+.dragdrop_container {
+	display: flex;
+	align-items: center;  /* vertical centering */
+	gap: 30px;            /* spacing between divs */
+	min-height: 200px;
+	margin-bottom: 2em;
+}
+
+.question {
+	margin: 1em 0em;
+}
+
+
+</style>
+<script>
+	var variable = 0;
+	let tasks = shuffleArray([{en:"letters",de:"Buchstaben",cl:"twoletternumber"},
+							  {en:"bars",de:"Balken",cl:"twobarnumber"},
+							  {en:"numbers",de:"Zahlen",cl:"twodigitnumber"}]);
+	let blockSize = 42; // number of items from block.
+	let nBlocks = 8;
+	let positions = shuffleArray([{cl:"verticalframe",  de:"vertikal",  en:"vertical"},
+		                          {cl:"horizontalframe",de:"horizontal",en:"horizontal"}]);
+	
+	function stylizeBar(digit, vertical=true) {
+		let x = (10-digit)*10;
+		if (vertical) {
+			return "height:"+x+"%";
+		} else {
+			return "width:"+x+"%";
+		}
+	}
+	
+	function stylizeLetter(digit) {
+		let letters = ["B","D","G","J","N","Q","T","W","Y"];
+		digit = digit % 10;
+		return letters[digit-1];
+	}
+	
+	function determineAccuracy() {
+		let acc = 0;
+		lastKeys = pslides.getKeys(0);
+		if (lastKeys.length==0) {
+			acc = 0;
+		} else if ((lastKeys[0] == "KeyS" && stim.numA_is_num1==1) ||
+				   (lastKeys[0] == "KeyK" && stim.numA_is_num1==0)) {
+			acc = 1;
+		}
+		console.log("Last keys:", lastKeys);
+		console.log("Accuracy:", acc);
+		return acc;
+	}
+	
+	
+	function feedbackText(acc) {
+		if (acc==1) {
+			return "Richtig";
+		} else if (acc==0) {
+			return "Falsch";
+		} else {
+			return "Code Error";
+		}
+	}
+	
+	function feedbackClass(acc) {
+		if (acc==1) {
+			return "correct-feedback";
+		} else if (acc==0) {
+			return "incorrect-feedback";
+		} else {
+			return "error-feedback";
+		}
+	}
+
+	nBlocks = Math.ceil(nBlocks);
+</script>
+<p-slide name="introduction">
+	<p-formframe>
+		<h1>Willkommen zum Experiment "Zahlen, Buchstaben und Größen"</h1>
+		<p>
+			Ihr Versuchspersonen-Code lautet: <p-subjcode></p-subjcode>
+		</p>
+		<p>
+			Im folgenden Experiment möchten wir herauszufinden, ob Zahlen speziell verarbeitet werden.
+			Insbesondere mehrstellige Zahlen scheinen laut neureren Studien anders verarbeitet zu 
+			werden als Buchstaben oder physische Größen. In dieser Studie wollen wir diese Hypothese prüfen.
+		</p>
+		<p>
+			Sie werden insgesamt zwei Aufgaben in jeweils zwei Formaten durchführen, 
+			was insgesamt eine Stunde in Anspruch nehmen wird.
+			Dabei werden Sie mehrere Reaktionsaufgaben durchführen, indem Sie auf der Tastatur die Tasten 
+			<kbd>S</kbd> und <kbd>K</kbd> drücken.
+		</p>
+		<p></p>
+		<p align="center"><p-next>Weiter</p-next></p>
+	</p-formframe>
+</p-slide>
+
+<p-slide name="participant_info">
+	<p-formframe>
+		<h1 style="margin-top:2em;margin-bottom:1em">Allgemeine Informationen</h1>
+
+		<p class="question"><b><label for="age" name="age">Wie alt sind Sie? (in Jahren)</label></b></p>
+		<input name="age" id="age" type="number" required min="18" max="120"/><br/>
+		
+		<p class="question"><b>Was ist Ihr Geschlecht?</b></p>
+		<p-input type="radio" name="sex" order="shuffle" required>
+			<label for="gender_female">weiblich</label>
+			<label for="gender_male">männlich</label>
+			<label for="gender_diverse">divers</label>
+		</p-input>
+		
+		<p class="question"><b>Sind Sie rechts- oder linkshändig?</b></p>
+		<p-input type="radio" name="handedness" order="shuffle" required>
+			<label for="left_handed">linkshändig</label>
+			<label for="both_handed">beidhändig</label>
+			<label for="right_handed">rechtshändig</label>
+		</p-input>
+		
+		<p class="question"><b>Mit welcher Hand schreiben Sie?</b></p>
+		<p-input type="radio" name="writing_handedness" order="shuffle" required>
+			<label for="l_handed_write">mit der linken Hand</label>
+			<label for="b_handed_write">mit der rechten oder linken Hand</label>
+			<label for="r_handed_write">mit der rechten Hand</label>
+		</p-input>
+		
+		<p class="question"><b>Welche der folgenden Punkte treffen auf Sie zu?</b></p>
+		<p-input type="checkbox" order="shuffle">
+			<label for="bilingual">Ich bin bilingual aufgewachsen.</label>
+			<label for="mothertongue">Deutsch ist meine Muttersprache.</label>
+			<label for="learned_math_in_German">Ich habe Mathematik in deutscher Sprache gelernt.</label>
+			<label for="other_lang">Ich spreche fließend eine andere Sprache.</label>
+			<label for="count_in_German">Ich zähle Objekte auf Deutsch.</label>
+			<label for="reading_disorder">Ich habe eine Lese-Rechtschreib-Störung.</label>
+			<label for="reading_weakness">Ich habe eine Lese-Rechtschreib-Schwäche.</label>
+			<label for="dyscalculia">Ich habe eine Rechenschwäche.</label>
+			<label for="mental_calc">Ich habe Probleme im Kopfrechnen.</label>
+			<label for="graphs">Ich arbeite viel mit visuellen Darstellungen.</label>
+			<label for="grammar_problems">Ich mache öfters grammatische Fehler.</label>
+			<label for="ortho_problems">Ich mache öfters Rechtschreibfehler.</label>
+			<label for="read_book">Ich habe in den letzten zwei Jahren ein Buch von vorne bis hinten gelesen.</label>
+		</p-input>
+		<p></p>
+		<p align="center"><p-next>Weiter</p-next></p>
+	</p-formframe>
+</p-slide>
+
+<script>taskIterator = 0;</script>
+<p-while cond="taskIterator < tasks.length" name="taskLoop">
+
+	<script>
+		positionIterator = 0;
+		task = tasks[taskIterator];
+	</script>
+	<p-while cond="positionIterator < positions.length" name="positionLoop">
+		<script>
+			sumCorrect = 0; Iterator = 0;
+			stim = {dec1:"2",unit1:"9",dec2:"3",unit2:"7"};
+			position = positions[positionIterator];
+		</script>
+		
+		<p-slide name="instruction_bars_horizontal">
+			<p-formframe>
+				<h1 align="center">
+					<span jsfill="task.de">{{task.de}}</span> - 
+					<span jsfill="position.de">{{position.de}}</span>
+				</h1>
+				
+				<p-if cond="task.en=='numbers'" id="firstPif">
+					<p>
+						In der folgenden Aufgabe werden Ihnen zwei Zahlen präsentiert.
+						Sie müssen immer die größere der beiden Zahlen wählen.
+					</p>
+				</p-if>
+				<p-else>
+					<p>
+						In der folgenden Aufgabe sehen Sie zwei Paare von 
+						<span jsfill="task.de">{{task.de}}</span>.
+						Sie müssen eines der 
+						<span jsfill="task.de">{{task.de}}</span>paare auswählen.
+					</p>
+				</p-else>
+				
+				<div id="instruction_short">
+					<p-if cond="task.en=='bars'">
+						<p>
+							Sie sehen zwei Balkenpaare mit jeweils 
+							einem linken und einem rechten Balken.
+						</p>
+						<ol>
+							<li>
+								Wählen Sie das Balkenpaar aus, in dem
+								der <b>linke</b> Balken höher ist.
+							</li>
+							<li>
+								<b>Wenn aber</b> in beiden Balkenpaaren die jeweils
+								<b>linken</b> Balken <b>gleich</b> hoch sind, 
+								wählen Sie das Balkenpaar aus, bei dem der
+								<b>rechte</b> Balken höher ist.
+							</li>
+						</ol>
+					</p-if>
+					<p-elif cond="task.en=='letters'">
+						<p>
+							Sie sehen zwei Buchstabenpaare mit jeweils einem linken 
+							und einem rechten Buchstaben.<br/>
+							Welche dieser Kombinationen von Buchstaben würde <b>später in einem Wörterbuch</b> stehen?
+							Beispielsweise würde "Aachen" vor "Adler" im Wörterbuch stehen, da "a" vor "d" im Alphabet steht.
+						</p>
+						<ol>
+							<li>
+								Wählen Sie das Buchstabenpaar aus, in dem
+								der linke Buchstabe später im Alphabet steht.
+							</li>
+							<li>
+								<b>Wenn</b> die jeweils <b>linken</b> Buchstaben dieselben sind,
+								entscheiden Sie anhand der jeweils <b>rechten</b> Buchstaben,
+								welcher der beiden später im Alphabet auftaucht.
+							</li>
+						</ol>
+					</p-elif>
+					<p-elif cond="task.en!='numbers'">
+						<p><b style="color:red;">Ein Fehler ist bei der Instruktion aufgetreten.</b></p>
+					</p-elif>
+				
+					<div id="precise_instruction">
+						<script>
+							stim1Name = ""; stim2Name = "";
+							if (task.en=="bars" && position.en=="horizontal") {
+								stim1Name = "das <b>linke</b> Balkenpaar"
+								stim2Name = "das <b>rechte</b> Balkenpaar"
+							} else if (task.en=="bars" && position.en=="vertical") {
+								stim1Name = "das <b>obere</b> Balkenpaar"
+								stim2Name = "das <b>untere</b> Balkenpaar"
+							} else if (task.en=="numbers" && position.en=="horizontal") {
+								stim1Name = "die <b>linke</b> Zahl"
+								stim2Name = "die <b>rechte</b> Zahl"
+							} else if (task.en=="numbers" && position.en=="vertical") {
+								stim1Name = "die <b>obere</b> Zahl"
+								stim2Name = "die <b>untere</b> Zahl"
+							} else if (task.en=="letters" && position.en=="horizontal") {
+								stim1Name = "das <b>linke</b> Buchstabenpaar"
+								stim2Name = "das <b>rechte</b> Buchstabenpaar"
+							} else if (task.en=="letters" && position.en=="vertical") {
+								stim1Name = "das <b>obere</b> Buchstabenpaar"
+								stim2Name = "das <b>untere</b> Buchstabenpaar"
+							}
+						</script>
+						<p>
+							Sie wählen <span jsfill="stim1Name">{{stim1}}</span> 
+							mit der Taste <kbd>S</kbd> aus und
+							<span jsfill="stim2Name">{{stim2}}</span>
+							mit der Taste <kbd>K</kbd>.
+						</p>
+					</div>
+				</div>
+				
+				<p>Hier ein <b>Beispiel</b>:</p>
+				<div class="example_display" idfill="presented_stimuli">
+					<p align="center" style="color:red;">An error occured</p>
+				</div>
+				
+				<div id="example_explanation">
+					<p-if cond="task.en=='numbers' && position.en=='vertical'">
+						<p>
+							In diesem Beispiel müssten Sie <kbd>K</kbd> drücken, 
+							da die untere Zahl größer ist.
+						</p>
+					</p-if>
+					<p-elif cond="task.en=='numbers' && position.en=='horizontal'">
+						<p>
+							Im obigen Beispiel müssten Sie <kbd>K</kbd> drücken, 
+							da die rechte Zahl größer ist.
+						</p>
+					</p-elif>
+					<p-elif cond="task.en=='bars' && position.en=='vertical'">
+						<p>
+							In diesem Beispiel müssten Sie <kbd>K</kbd> drücken, da der 
+							<b>linke Balken</b> beim unteren Paar höher ist als beim oberen Paar.
+							Die jeweils rechten Balken spielen im konkreten Beispiel keine Rolle, 
+							da die linken Balken unterschiedlich hoch sind.
+							Sobald die linken Balken gleich hoch sind,
+							müssen Sie anhand der rechten Balken entscheiden.
+						</p>
+					</p-elif>
+					<p-elif cond="task.en=='bars' && position.en=='horizontal'">
+						<p>
+							Im obigen Beispiel müssten Sie <kbd>K</kbd> drücken, 
+							da der <b>linke Balken</b> im rechten Paar höher ist 
+							als im linken Paar.
+							Die jeweils rechten Balken ist im konkreten Fall irrelevant. 
+							Sobald aber die linken Balken beider Paare gleich hoch sind,
+							müssen Sie anhand der rechten Balken entscheiden,
+							welches Paar Sie auswählen müssen.
+						</p>
+					</p-elif>
+					<p-elif cond="task.en=='letters' && position.en=='vertical'">
+						<p>
+							In diesem Beispiel müssten Sie <kbd>K</kbd> drücken, 
+							da der <b>linke Buchstabe</b> im unteren Paar <code><b>(H)</b></code>
+							später im Alphabet vorkommt als der im oberen Paar 
+							<code><b>(F)</b></code>.
+							Die jeweils rechten Buchstaben spielen hier keine Rolle,
+							da die linken Buchstaben unterschiedlich sind.
+						</p>
+					</p-elif>
+					<p-elif cond="task.en=='letters' && position.en=='horizontal'">
+						<p>
+							In diesem Beispiel müssten Sie <kbd>K</kbd> drücken, 
+							da der <b>linke Buchstabe</b> im rechten Paar <code><b>(H)</b></code>
+							später im Alphabet vorkommt als der im linken Paar 
+							<code><b>(F)</b></code>.
+							Die jeweils rechten Buchstaben spielen hier keine Rolle,
+							da die linken Buchstaben unterschiedlich sind.
+						</p>
+					</p-elif>
+				</div>
+				<p>
+					Versuchen Sie, so <p-nobr><b>schnell</b>&#x1F4AB;</p-nobr> und 
+					<p-nobr><b>genau</b>&#x1F9D0;</p-nobr> wie möglich zu reagieren.
+				</p>
+				<p style="height:3em;"></p>
+				<p align="center"><p-next>Übung starten</p-next></p>
+			</p-formframe>
+		</p-slide>
+		
+		<p-while name="practiceLoop" cond="sumCorrect <= pslides.data.practice.length*0.7">
+			<script>sumCorrect = 0; Iterator = 0; sumItems = 0;</script>
+			<p-while name="practiceStimulusLoop" cond="Iterator<pslides.data.practice.length">
+				<script>
+					if ("practice" in pslides.data) {
+						stim = pslides.data.practice[Iterator];
+					}
+				</script>
+				<p-slide maxms="400" name="fixcross">
+					<p-center class="fixcross">+</p-center>
+				</p-slide>
+				<p-slide keysnext="KeyS KeyK" name="expect_response">
+					<p-var name="stim" jsfill="stim">{{stim}}</p-var>
+					<p-var name="item_number" jsfill="Iterator">{{Iterator}}</p-var>
+					<p-var name="position" jsfill="position.en">{{position.en}}</p-var>
+					<p-var name="task" jsfill="task.en">{{task.en}}</p-var>
+					<p-center idfill="presented_stimuli"></p-center>
+				</p-slide>
+				<script>
+					accuracy = determineAccuracy();
+					sumCorrect += accuracy;
+					sumItems++;
+				</script>
+				<p-slide name="feedback" maxms="800">
+					<p-var name="accuracy" jsfill="accuracy"></p-var>
+					<p-var name="sumCorrect" jsfill="sumCorrect"></p-var>
+					<p-var name="itemInBlock" jsfill="sumItems"></p-var>
+					<p-center jsattr="class:feedbackClass(accuracy)" 
+					          jsfill="feedbackText(accuracy)">{{NA}}</p-center>
+				</p-slide>
+				<script>Iterator++;</script>
+			</p-while>
+			<p-if cond="sumCorrect <= pslides.data.practice.length*0.7">
+				<p-slide name="practice_reminder" keysnext="Space">
+					<p-center>
+						<p>Nochmal zur Erinnerung:</p>
+						<div idfill="instruction_short"></div>
+						<p>
+							Falls Sie nicht weiterkommen oder die Fragestellung nicht verstehen, 
+							bitte zögern Sie nicht, nachzufragen.
+						</p>
+						<p align="center"><p-next>Weiter üben</p-next></p>
+					</p-center>
+				</p-slide>
+				<p-slide maxms="700" name="blank_after_practice_reminder"></p-slide>
+			</p-if>
+		</p-while>
+		<p-slide name="practice_done" keysnext="Space">
+			<p-center>
+				<p>
+					Die Übung lief doch sehr gut! &#x1F60A;<br/>
+					Denken Sie daran, so <p-nobr><b>schnell</b> &#x1F4AB;</p-nobr> und <p-nobr><b>genau</b>&#x1F9D0;</p-nobr> wie möglich zu antworten.<br/>
+					Für jeden Vergleich haben Sie maximal <p-nobr>3 Sekunden &#x23F1;</p-nobr> Zeit.<br/>
+					Sie können mit der <kbd>Leertaste</kbd> beginnen.
+				</p>
+			</p-center>
+		</p-slide>
+		
+		<script>
+			Iterator = 0; sumCorrect = 0; sumItems = 0; completedBlocks=0; accuracy=0;
+		</script>
+		
+		<p-while cond="Iterator < pslides.data.stimuli.length" name="stimLoop">
+			<script>
+				if ("stimuli" in pslides.data) {
+					stim = pslides.data.stimuli[Iterator];
+				}
+			</script>
+			<p-slide maxms="400" name="fixcross">
+				<p-center class="fixcross">+</p-center>
+			</p-slide>
+			<p-slide keysnext="KeyS KeyK" maxms="3000" name="expect_response">
+				<p-var name="stim" jsfill="stim">{{stim}}</p-var>
+				<p-var name="item_number" jsfill="Iterator">{{Iterator}}</p-var>
+				<p-var name="position" jsfill="position.en">{{position.en}}</p-var>
+				<p-var name="block" jsfill="completedBlocks">{{completedBlocks}}</p-var>
+				<p-var name="task" jsfill="task.en">{{task.en}}</p-var>
+				<p-center id="presented_stimuli">
+					<div class="verticalframe" jsattr="class:position.cl">
+						<div class="twobarnumber" jsattr="class:task.cl">
+							<div class="decadedigit">
+								<div class="digit" jsfill="stim.dec1"></div>
+								<div class="letter" jsfill="stylizeLetter(stim.dec1)"></div>
+								<div class="magnitude" jsattr="style:stylizeBar(stim.dec1)"></div>
+							</div>
+							<div class="unitdigit">
+								<div class="digit" jsfill="stim.unit1"></div>
+								<div class="letter" jsfill="stylizeLetter(stim.unit1)"></div>
+								<div class="magnitude" jsattr="style:stylizeBar(stim.unit1)"></div>
+							</div>
+						</div>
+						<div class="twobarnumber" jsattr="class:task.cl">
+							<div class="decadedigit">
+								<div class="digit" jsfill="stim.dec2"></div>
+								<div class="letter" jsfill="stylizeLetter(stim.dec2)"></div>
+								<div class="magnitude" jsattr="style:stylizeBar(stim.dec2)"></div>
+							</div>
+							<div class="unitdigit">
+								<div class="digit" jsfill="stim.unit2"></div>
+								<div class="letter" jsfill="stylizeLetter(stim.unit2)"></div>
+								<div class="magnitude" jsattr="style:stylizeBar(stim.unit2)"></div>
+							</div>
+						</div>
+					</div>
+				</p-center>
+			</p-slide>
+			<script>
+				accuracy = determineAccuracy();
+				sumItems++;
+				sumCorrect += accuracy;
+			</script>
+			<p-slide name="blank" maxms="500">
+				<p-var name="accuracy" jsfill="accuracy"></p-var>
+				<p-var name="sumCorrect" jsfill="sumCorrect"></p-var>
+				<p-var name="itemInBlock" jsfill="sumItems"></p-var>
+			</p-slide>
+			<p-if cond="Iterator !== 0 && Iterator % blockSize == 0">
+				<p-slide name="pause" keysnext="Space">
+					<script>
+						completedBlocks++;
+					</script>
+					<p-center>
+						<p>Sie haben <b jsfill="completedBlocks+'/'+nBlocks">NA/8</b> Blöcke abgeschlossen.</p>
+						
+						<p-upload hidden id="data_upload_between" format="csv" hidden>Sichere Kopie hochladen</p-upload>
+						<script>sendOutData(document.getElementById("data_upload_between"))</script>
+						<p-message hidden for="data_upload_between">Daten nicht zwischengespeichert.</p-message>
+						
+						<p-download hidden id="data_download_between" format="csv">Daten herunterladen</p-download><br/>
+						<p-message hidden for="data_download_between">Daten nicht heruntergeladen.</p-message>
+						
+						<p>Ihre Reaktionen waren zu <b jsfill="Math.round(sumCorrect/sumItems*100)+'%'">NA%</b> korrekt.</p>
+						<p>Wenn Sie fortfahren wollen, drücken Sie die <kbd>Leertaste</kbd>.</p>
+					</p-center>
+				</p-slide>
+				<script>sumCorrect = 0; sumItems = 0;</script>
+				<p-slide maxms="1000" name="get_ready">
+					<p-center style="font-size:1.5cm;">Bereit machen ...</p-center>
+				</p-slide>
+				<p-slide maxms="500" name="after_pause_blank"></p-slide>
+			</p-if>
+			<script>Iterator++;</script>
+		</p-while>
+		
+		<p-slide name="task_part_finished" keysnext="Space">
+			<p-center>
+				<p>Sie haben diesen Aufgabenteil erfolgreich abgeschlossen.</p>
+				<p>Wie schwierig fanden Sie diese Aufgabe (1: einfach - 9: schwierig)?</p>
+				<p-input type="likert" name="difficulty_task" options="1 2 3 4 5 6 7 8 9" required></p-input>
+				<p><p-next>Weiter</p-next></p>
+			</p-center>
+		</p-slide>
+		<script>positionIterator++;</script>
+	</p-while>
+	<script>taskIterator++;</script>
+</p-while>
+
+
+<p-slide maxms="1000" name="after_experiment_blank"></p-slide>
+
+<p-slide name="debriefing">
+	<p-formframe>
+		<h1>Das Experiment ist beendet.</h1>
+		<p>
+			Wir haben nur noch wenige Fragen, um Feedback zu sammeln.
+		</p>
+		<p>
+			Welche Aufgabe war schwieriger, welche die einfacher?
+			Ordnen Sie bitte die Aufgaben von <b>schwierig (oben)</b> zu <b>einfach (unten)</b> an, 
+			indem Sie die Etiketten von links nach rechts ziehen und in einer Rangliste einordnen:
+		</p>
+		<div class="dragdrop_container">
+			<p-dragdrop align="center" class="source_bucket" style="float:left;"
+			            id="source_bucket" order="shuffle" layout="col">
+				<div name="vertical_numbers">Zahlen - vertikal</div>
+				<div name="horizontal_numbers">Zahlen - horizontal</div>
+				<div name="vertical_bars">Balken - vertikal</div>
+				<div name="horizontal_bars">Balken - horizontal</div>
+				<div name="vertical_letters">Buchstaben - vertikal</div>
+				<div name="horizontal_letters">Buchstaben - horizontal</div>
+			</p-dragdrop>
+			<p-dragdrop style="float:right" align="center" class="target_bucket" id="target_bucket" 
+			            import="true" export="false" layout="col">
+			</p-dragdrop>
+		</div>
+				
+		<div class="question">
+			<b>Welches Format fanden Sie am intuitivsten?</b>
+			<p-input type="radio" name="intuitive_task" order="shuffle">
+				<label for="intuitive_letters">Buchstaben</label>
+				<label for="intuitive_numbers">Zahlen</label>
+				<label for="intuitive_bars">Balken</label>
+			</p-input>
+		</div>		
+		
+		<div class="question">
+			<b>Gab es eine bestimmte Strategie, die Sie beim Bearbeiten der Aufgaben verwendet haben?</b><br/>
+			<textarea name="strategy_text" id="strategy_text"></textarea>
+		</div>
+		
+		<div class="question">
+			<b>Haben Sie weitere Anmerkungen zu den Aufgaben oder Kritik, wie wir diese verbessern könnten?</b><br/>
+			<textarea name="comment_text" id="comment_text"></textarea>
+		</div>
+		
+		<p align="center"><p-next>Experiment abschließen</p-next></p>
+		
+	</p-formframe>
+</p-slide>
+
+<script>sendOutData(element=document.getElementById("data_upload_end"));</script>
+
+<p-slide name="slide_upload">
+	<p-formframe>
+		<h1>Das Experiment ist beendet.</h1>
+		<p>
+			Vielen Dank&#x1F64F;, dass Sie sich die Zeit genommen haben, an unserem Experiment teilzunehmen
+			und die Grundlagenforschung zu unterstützen.<br/>
+			Bitte <b>informieren Sie die versuchsleitende Person</b>, dass Sie das Experiment abgeschlossen haben.
+		</p>
+		<p>
+			Sie können nun Ihre Daten sicher hochladen und herunterladen.
+		</p>
+		<p></p>
+		<p align="center"><p-message for="data_upload_end">Daten nicht hochgeladen.</p-message></p>
+		<p align="center"><p-upload id="data_upload_end" format="csv">Hochladen erneut versuchen</p-upload></p>
+		
+		<p align="center"><p-download id="data_download_end" format="csv">Daten herunterladen</p-download></p>
+		<p align="center"><p-message for="data_download_end">Daten nicht heruntergeladen.</p-message></p>
+		
+	</p-formframe>
+</p-slide>
+
+</body>
