@@ -962,9 +962,11 @@ p-dragdrop.target_bucket {
 					<p-center>
 						<p>Sie haben <b jsfill="completedBlocks+'/'+nBlocks">NA/8</b> Blöcke abgeschlossen.</p>
 						
+						<!--
 						<p-upload hidden id="data_upload_between" format="csv" hidden>Sichere Kopie hochladen</p-upload>
 						<script>sendOutData(document.getElementById("data_upload_between"))</script>
 						<p-message hidden for="data_upload_between">Daten nicht zwischengespeichert.</p-message>
+						-->
 						
 						<p-download hidden id="data_download_between" format="csv">Daten herunterladen</p-download><br/>
 						<p-message hidden for="data_download_between">Daten nicht heruntergeladen.</p-message>
@@ -1048,7 +1050,7 @@ p-dragdrop.target_bucket {
 	</p-formframe>
 </p-slide>
 
-<script>sendOutData(element=document.getElementById("data_upload_end"));</script>
+<!--<script>sendOutData(element=document.getElementById("data_upload_end"));</script>-->
 
 <p-slide name="slide_upload">
 	<p-formframe>
@@ -1062,9 +1064,11 @@ p-dragdrop.target_bucket {
 			Sie können nun Ihre Daten sicher hochladen und herunterladen.
 		</p>
 		<p></p>
+		
+		<!--
 		<p align="center"><p-message for="data_upload_end">Daten nicht hochgeladen.</p-message></p>
 		<p align="center"><p-upload id="data_upload_end" format="csv">Hochladen erneut versuchen</p-upload></p>
-		
+		-->
 		<p align="center"><p-download id="data_download_end" format="csv">Daten herunterladen</p-download></p>
 		<p align="center"><p-message for="data_download_end">Daten nicht heruntergeladen.</p-message></p>
 		
