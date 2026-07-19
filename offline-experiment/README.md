@@ -1,6 +1,6 @@
 
 
-# Experiment for running offline
+# Files for running the experiment offline
 
 In order to run the experiment offline, I have written this version here.
 Store the contents in the same same directory to allow the browser to access these files.
